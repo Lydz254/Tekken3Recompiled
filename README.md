@@ -1,4 +1,4 @@
-# Tekken 3 Recompiled â€” Jun showcase build
+# Tekken 3 Recompiled Jun showcase build
 
 A Windows PC project built on **psxrecomp**, with Jun Kazama added as a separate
 fighter. This preview includes the version used in the Jun showcase and an automatic first-run setup.
