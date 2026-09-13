@@ -6,8 +6,10 @@ generated retail code, saves, developer captures and local settings are excluded
 
 Release builds disable the TCP debug server and debug tools. Development
 configurations can enable them; use those only for local testing. Netplay is
-disabled in this preview. The setup wizard may download compiler/build dependencies;
-the Jun importer uses only local game data and a user-supplied MAME executable.
+disabled in this preview. The easy setup launcher downloads a pinned compiler toolchain and MAME from
+their upstream releases, checks archive SHA-256 hashes, and keeps tools inside
+the application folder. The Jun importer uses local game data. Cancel closes
+the Windows process group containing setup, MAME and compiler processes.
 
 Do not upload ROMs, BIOS files, imported packs, memory cards or raw memory captures
 with bug reports. Review logs before posting: locally generated logs can contain

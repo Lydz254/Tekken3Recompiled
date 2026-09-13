@@ -7,6 +7,9 @@
 /out/
 /dist/
 /toolchain/
+/.setup/
+/.runtime/
+/Play Tekken 3.exe
 /psxrecomp/generated/
 /psxrecomp/recompiler/build*/
 /psxrecomp/bios/SCPH*.BIN

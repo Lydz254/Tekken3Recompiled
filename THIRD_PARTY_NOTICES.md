@@ -23,8 +23,18 @@ MAME reference revision: `aab5dcadb6025303ba019d0189344a5df536a623`.
 System 12 ROM load metadata: `src/mame/namco/namcos12.cpp`, copyright smf,
 BSD-3-Clause. The C352 sample decoder in `tools/prepare_jun_voices.py` adapts
 the MAME chip behavior; copyright R. Belmont and superctr, BSD-3-Clause.
-See `licenses/MAME-BSD-3-Clause.txt`. MAME itself is supplied separately by the user.
+See `licenses/MAME-BSD-3-Clause.txt`. The easy launcher downloads the unmodified MAME 0.289 upstream distribution
+from https://github.com/mamedev/mame/releases/tag/mame0289, retaining its
+license files. Corresponding MAME source is available at that release/tag.
+MAME binaries and ROMs are not embedded in this ZIP.
 
 Original Tekken models, motion data, portraits, voices, game executables and
 music are not included. The importer derives the needed assets from files
 the user provides locally. Original game rights are not licensed by this project.
+
+
+The easy setup package bundles portable CPython 3.12.13 from the toolchain's
+python-build-standalone distribution. Its notices are retained in
+`.runtime/python/LICENSE.txt`. Pillow 12.0.0 and its dependency notices are in
+`.runtime/python/Lib/site-packages/pillow-12.0.0.dist-info/licenses/`.
+The pinned distribution URLs and hashes are in `launcher/tools.lock.json`.

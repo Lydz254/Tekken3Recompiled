@@ -1,7 +1,7 @@
-# Tekken 3 Recompiled — Jun showcase build
+# Tekken 3 Recompiled â€” Jun showcase build
 
 A Windows PC project built on **psxrecomp**, with Jun Kazama added as a separate
-fighter. This is the first public preview of the version used in the Jun showcase.
+fighter. This preview includes the version used in the Jun showcase and an automatic first-run setup.
 
 Jun has her own roster entry in both character selectors, imported TTT1 solo
 moves and animations, paired throws and reversals, voices, victory poses, and
@@ -11,43 +11,38 @@ This is a **hybrid recompilation**: translated game routines run alongside PS1
 hardware models and interpreter fallback. It is not a completed source decompilation.
 Development was assisted by AI, with local compilation and gameplay testing.
 
-## Download and first setup
+## Download and play
 
-Get **Tekken3Recompiled-v0.1.0-jun-preview-Windows-x64-Setup.zip** from
-[Releases](https://github.com/FishB0nes98/Tekken3Recompiled/releases).
+Download **[Tekken3Recompiled-v0.1.1-Easy-Setup.zip](https://github.com/FishB0nes98/Tekken3Recompiled/releases/tag/v0.1.1-easy-setup)**.
 
-1. Extract the entire ZIP into a writable folder. Keep its source and asset folders.
-2. Install **Python 3.12 or newer**, with Python available on PATH.
-3. Run **Tekken_3_Recompiled.exe** and select your **USA Tekken 3 PS1 disc image
-   (SLUS-00402)**. Use **Generate & rebuild** to create the playable build locally.
-4. The wizard obtains the compiler toolchain when needed. First setup requires
-   internet access for build dependencies and several GB of free working space.
-5. Reopen the same launcher to play. Enable the desired packages in **Mods**.
+1. Extract the whole ZIP and open **Play Tekken 3.exe**.
+2. Choose your Tekken 3 USA PS1 disc image. For Jun, also choose your TTT1
+   and Tekken 3 arcade ZIPs.
+3. Click **Set up & play**. The launcher handles everything and opens the game.
 
-**Yes, the launcher requires your game disc image.** No Tekken disc image, Sony
-retail BIOS, extracted Jun payload, or generated retail game code is distributed.
-OpenBIOS is included under its own license. A retail BIOS is optional.
-Only the verified USA disc revision is supported by these game-specific hooks.
+**No manual Python, MAME, compiler or command-line setup.** The smaller download
+includes its own Python and image tools; the remaining tools download
+from pinned upstream releases on first setup. Allow several minutes and at
+least 4 GB of free working space. Nothing is installed into your system PATH.
 
-### Add Jun
+After setup, opening **Play Tekken 3.exe** starts the game directly.
+Use **Configure Tekken 3.cmd** to open the graphics, controller and mod settings.
+If a download is interrupted, click **Try again**. **Cancel** stops the setup
+processes and keeps completed downloads for another attempt.
 
-After the base game setup, run **Import-Jun.cmd**. It asks for your local:
+### Your game files
 
-- **TTT1 arcade** non-merged `tektagt.zip` — World, TEG2/VER.C1, set 1.
-- **Tekken 3 arcade** non-merged `tekken3.zip` — World, TET2/VER.E1, for the unused portraits.
-- **MAME 0.289** executable, available from the [MAME project](https://www.mamedev.org/).
+- **Tekken 3 PS1:** USA, **SLUS-00402**, with its CUE/BIN tracks.
+- **TTT1 arcade for Jun:** non-merged `tektagt.zip`, World TEG2/VER.C1, set 1.
+- **Tekken 3 arcade portraits:** non-merged `tekken3.zip`, World TET2/VER.E1.
 
-Install the small image-conversion dependency once:
+Keep **Include Jun Kazama** checked to add her automatically. Turn it off if
+setting up only the base game and the other mods. The importer verifies the
+arcade chips and all nine converted Jun files against the tested showcase build.
 
-```powershell
-python -m pip install -r tools/requirements-import.txt
-```
-
-The importer verifies your ROM chips, runs MAME muted with separate temporary
-settings, converts Jun's assets locally, and rebuilds the game. It checks all
-nine resulting runtime files against the tested showcase version. Then enable
-the **Jun** package in the launcher. ROMs and imported outputs remain on your PC;
-the importer does not fetch or upload game data.
+The launcher requires your game files. **No ROMs, retail BIOS, extracted Jun
+payloads or generated retail game code are included.** Game data is processed
+locally and is never uploaded. OpenBIOS is included under its own license.
 
 ## Included mods and improvements
 
@@ -65,7 +60,7 @@ the importer does not fetch or upload game data.
 | Audio options | Separate music and sound-effect volume controls |
 | Framework enhancements | Fast loading and configurable CD speed |
 
-OpenGL, 16:9, perspective-correct textures and 3× supersampling are the project
+OpenGL, 16:9, perspective-correct textures and 3Ă— supersampling are the project
 defaults. Adjust these in the launcher for your hardware. Custom texture and
 gallery artwork includes AI-generated illustrations.
 

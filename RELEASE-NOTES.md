@@ -1,30 +1,22 @@
-# v0.1.0-jun-preview
+# v0.1.1 — Easy setup
 
-First public preview of the Jun Kazama showcase version, including all ten mod
-packages and their supporting runtime changes. Custom HD textures and outfit
-gallery artwork are included. Jun's original assets are imported locally.
+**Open Play Tekken 3.exe, choose your game files, and click Set up & play.**
 
-Download the **Windows x64 Setup ZIP**, extract it, and run
-**Tekken_3_Recompiled.exe**. Supply a supported USA Tekken 3 disc image and use
-**Generate & rebuild**. Python 3.12+ is required; the wizard obtains the build
-toolchain. See the README for the additional arcade ROMs and MAME version
-required by **Import-Jun.cmd**.
+The launcher downloads its tools, prepares the game and all selected mods,
+imports Jun, builds locally, and opens the game. On later launches the same icon
+starts the game directly. Use Configure Tekken 3.cmd for graphics, controls and mods.
 
-Release preparation verified:
+- No manual Python, Pillow, MAME or compiler installation.
+- One setup screen for the disc and optional Jun donor ZIPs.
+- Progress messages, Cancel, and Retry after an interrupted setup.
+- Pinned tool downloads checked with SHA-256 before use.
+- Portable tools stay in the application folder; no system PATH changes.
+- Smaller ZIP: duplicate textures are rebuilt from the included PNGs and checked
+  byte-for-byte against all 20 existing runtime textures.
+- Gameplay and mod behavior are unchanged from the Jun showcase preview.
 
-- A clean setup host build with debug tools, TCP debug server and netplay disabled.
-- No game or retail BIOS code linked into the distributed setup host.
-- A complete game build from the packaged source using a locally supplied disc.
-- A fresh, muted MAME capture and conversion reproducing all nine Jun runtime
-  files byte-for-byte against the showcase version.
-- Import tests rejecting mismatched chip contents and changed consumed RAM bytes.
-- Explicit file allowlisting and credential/private-key/personal-path checks.
-- Windows Defender scan: no threats found with the installed definitions.
+First setup requires internet access, your supported game files, at least 4 GB
+of working space, and several minutes. For Jun, provide the supported TTT1 and
+Tekken 3 arcade ZIPs as well as the USA PS1 disc. No ROMs or retail BIOS are included.
 
-Disc images, retail BIOS dumps, generated retail code, donor payloads, memory
-cards, personal settings, debug captures and showcase music/video are excluded.
-The ZIP includes a per-file SHA-256 manifest and a separate archive checksum.
-
-This is an unsigned Windows preview. Steam Deck/Proton and Linux are unverified.
-Jun's scope is solo combat; tag mechanics and secondary hair physics are not
-included. See the README for current limitations and upstream credits.
+Windows x64 preview. Steam Deck/Proton and native Linux remain unverified.
