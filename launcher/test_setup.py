@@ -1,12 +1,51 @@
 """ROM-free checks for setup integrity, archive boundaries and cancellation."""
 from pathlib import Path
-import hashlib,json,os,subprocess,sys,tempfile,unittest,zipfile
+import hashlib,json,os,subprocess,sys,tempfile,time,unittest,zipfile
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 import setup_backend as backend
 from easy_launcher import ProcessJob
 
 class SetupTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get('PSXRECOMP_TEST_TOOLCHAIN'),'Set PSXRECOMP_TEST_TOOLCHAIN to run real CMake/Ninja regression')
+    def test_future_timestamp_build_loop_and_retry(self):
+        toolchain=Path(os.environ['PSXRECOMP_TEST_TOOLCHAIN']).resolve()
+        cmake=toolchain/'bin/cmake.exe'
+        env=dict(os.environ,PATH=str(toolchain/'bin')+os.pathsep+os.environ.get('PATH',''),CMAKE_BUILD_PARALLEL_LEVEL='2')
+        with tempfile.TemporaryDirectory(prefix='tekken-setup-loop-') as temp:
+            root=Path(temp);build=root/'build-release';state=root/'.setup'
+            source=root/'CMakeLists.txt'
+            template=('cmake_minimum_required(VERSION 3.20)\n'
+                      'project(SetupRegression NONE)\n'
+                      'file(WRITE "${CMAKE_BINARY_DIR}/configured.txt" "REVISION:${TEKKEN3_JUN_EXPERIMENTAL}")\n'
+                      'add_custom_target(psx-runtime COMMAND "${CMAKE_COMMAND}" -E copy '
+                      '"${CMAKE_BINARY_DIR}/configured.txt" "${CMAKE_BINARY_DIR}/built.txt")\n')
+            def write_revision(revision):
+                source.write_text(template.replace('REVISION',revision),encoding='utf-8')
+                future=time.time()+86400
+                os.utime(source,(future,future))
+                return source.stat().st_mtime_ns
+            timestamp=write_revision('first')
+            configured=subprocess.run([str(cmake),'-S',str(root),'-B',str(build),'-G','Ninja',
+                '-DCMAKE_MAKE_PROGRAM='+str(toolchain/'bin/ninja.exe')],env=env,capture_output=True,text=True,timeout=30)
+            self.assertEqual(configured.returncode,0,configured.stdout+configured.stderr)
+            failed=subprocess.run([str(cmake),'--build',str(build),'--target','psx-runtime'],env=env,capture_output=True,text=True,timeout=90)
+            self.assertNotEqual(failed.returncode,0)
+            self.assertIn("manifest 'build.ninja' still dirty after 100 tries",failed.stdout+failed.stderr)
+            sentinel=build/'completed-work.txt';sentinel.write_text('keep')
+            with patch.object(backend,'ROOT',root),patch.object(backend,'BUILD',build),patch.object(backend,'STATE',state),patch.object(backend,'emit'):
+                backend.build_game(toolchain,env,True)
+                self.assertEqual((build/'built.txt').read_text(),'first:ON')
+                self.assertEqual(source.stat().st_mtime_ns,timestamp)
+                # Suppression must not prevent explicit configuration on retry,
+                # including source changes and switching the Jun option.
+                timestamp=write_revision('second')
+                backend.build_game(toolchain,env,False)
+            self.assertEqual((build/'built.txt').read_text(),'second:OFF')
+            self.assertEqual(source.stat().st_mtime_ns,timestamp)
+            self.assertEqual(sentinel.read_text(),'keep')
+            self.assertNotIn('Re-running CMake',(state/'setup.log').read_text())
+
     def test_archive_traversal_rejected_before_any_write(self):
         for name in ('../escape','C:/escape','safe/../../escape','safe\\..\\..\\escape','file:stream'):
             with self.subTest(name=name),tempfile.TemporaryDirectory() as temp:

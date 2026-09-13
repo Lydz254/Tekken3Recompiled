@@ -13,7 +13,7 @@ Development was assisted by AI, with local compilation and gameplay testing.
 
 ## Download and play
 
-Download **[Tekken3Recompiled-v0.1.1-Easy-Setup.zip](https://github.com/FishB0nes98/Tekken3Recompiled/releases/tag/v0.1.1-easy-setup)**.
+Download **[Tekken3Recompiled-v0.1.2-Easy-Setup.zip](https://github.com/FishB0nes98/Tekken3Recompiled/releases/tag/v0.1.2-easy-setup)**.
 
 1. Extract the whole ZIP and open **Play Tekken 3.exe**.
 2. Choose your Tekken 3 USA PS1 disc image. For Jun, also choose your TTT1
@@ -29,6 +29,13 @@ After setup, opening **Play Tekken 3.exe** starts the game directly.
 Use **Configure Tekken 3.cmd** to open the graphics, controller and mod settings.
 If a download is interrupted, click **Try again**. **Cancel** stops the setup
 processes and keeps completed downloads for another attempt.
+
+**Stuck on repeated CMake runs in v0.1.1?** Download the small
+**[v0.1.2 Setup Fix patch](https://github.com/FishB0nes98/Tekken3Recompiled/releases/download/v0.1.2-easy-setup/Tekken3Recompiled-v0.1.2-Setup-Fix.zip)**.
+Close the launcher, copy the patch contents into your existing Easy Setup folder
+(beside **Play Tekken 3.exe**), and replace files when prompted. Reopen the
+launcher and retry. Keep the existing folder in place so its build cache remains
+valid. Downloaded tools, imported Jun files, settings and saves are retained.
 
 ### Your game files
 

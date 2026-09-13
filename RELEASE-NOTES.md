@@ -1,22 +1,38 @@
-# v0.1.1 — Easy setup
+# v0.1.2 - Easy Setup build fix
 
-**Open Play Tekken 3.exe, choose your game files, and click Set up & play.**
+Fixes the setup loop that repeatedly runs CMake and eventually reports
+`manifest 'build.ninja' still dirty after 100 tries`.
 
-The launcher downloads its tools, prepares the game and all selected mods,
-imports Jun, builds locally, and opens the game. On later launches the same icon
-starts the game directly. Use Configure Tekken 3.cmd for graphics, controls and mods.
+## Already stuck on v0.1.1?
 
-- No manual Python, Pillow, MAME or compiler installation.
-- One setup screen for the disc and optional Jun donor ZIPs.
-- Progress messages, Cancel, and Retry after an interrupted setup.
-- Pinned tool downloads checked with SHA-256 before use.
-- Portable tools stay in the application folder; no system PATH changes.
-- Smaller ZIP: duplicate textures are rebuilt from the included PNGs and checked
-  byte-for-byte against all 20 existing runtime textures.
-- Gameplay and mod behavior are unchanged from the Jun showcase preview.
+Download **Tekken3Recompiled-v0.1.2-Setup-Fix.zip**, the small patch.
 
-First setup requires internet access, your supported game files, at least 4 GB
-of working space, and several minutes. For Jun, provide the supported TTT1 and
-Tekken 3 arcade ZIPs as well as the USA PS1 disc. No ROMs or retail BIOS are included.
+1. Close the launcher.
+2. Extract the patch and copy its contents into your **existing** Easy Setup
+   folder, beside **Play Tekken 3.exe**. Choose **Replace** when asked.
+3. Open **Play Tekken 3.exe** again and retry setup.
 
-Windows x64 preview. Steam Deck/Proton and native Linux remain unverified.
+Keep the existing game folder in place. Downloads, imported Jun files,
+completed build work, settings and saves are retained. No terminal commands
+are needed. This patch requires the v0.1.1 Easy Setup package.
+
+## New installation
+
+Download **Tekken3Recompiled-v0.1.2-Easy-Setup.zip**, extract the entire archive,
+and open **Play Tekken 3.exe**. Choose your game files and click **Set up & play**.
+The launcher downloads the remaining tools automatically.
+
+## Changes
+
+- Easy Setup explicitly configures on every attempt, then builds without
+  Ninja's automatic CMake regeneration checks. This avoids the loop reproduced
+  with future-dated input files. Normal developer builds keep their defaults.
+- Build errors now direct you to the setup log instead of suggesting that every
+  failure is caused by heavy apps or insufficient memory.
+- Gameplay and all included mods are unchanged, including Jun Kazama.
+
+First setup requires internet access, your supported Tekken 3 USA PS1 disc,
+and at least 4 GB of working space. Jun also requires the supported TTT1 and
+Tekken 3 arcade ZIPs. No ROMs, retail BIOS, extracted donor assets, or generated
+retail game code are included. Windows x64 preview; Steam Deck/Proton and native
+Linux remain unverified.

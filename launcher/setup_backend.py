@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 STATE=ROOT/'.setup'
 BUILD=ROOT/'build-release'
 EXE=BUILD/'Tekken_3_Recompiled.exe'
-RELEASE='0.1.1-easy-setup'
+RELEASE='0.1.2-easy-setup'
 LOCK=json.loads((ROOT/'launcher/tools.lock.json').read_text())
 
 class SetupError(Exception):
@@ -71,7 +71,7 @@ def download(spec):
     path=cache/spec['filename']
     if path.is_file() and digest(path)==spec['sha256']:return path
     temp=path.with_suffix(path.suffix+'.part')
-    request=urllib.request.Request(spec['url'],headers={'User-Agent':'Tekken3-Easy-Setup/0.1.1'})
+    request=urllib.request.Request(spec['url'],headers={'User-Agent':'Tekken3-Easy-Setup/'+RELEASE})
     try:
         with urllib.request.urlopen(request,timeout=60) as response,temp.open('wb') as out:
             total=int(response.headers.get('Content-Length',spec['size']));received=0;last=0
@@ -164,6 +164,25 @@ def validate_files(disc,ttt,t3,include_jun):
         except (ValueError,zipfile.BadZipFile,OSError) as error:
             log_line(str(error));raise SetupError('An arcade ZIP does not match the supported set. Jun needs tektagt (World C1) and tekken3 (World E1), in non-merged ZIPs.') from error
 
+def build_game(toolchain,env,include_jun):
+    cmake=toolchain/'bin/cmake.exe'
+    emit(message='Preparing the game to build',detail='First setup can take several minutes.')
+    # Setup explicitly configures on every attempt, after generation/import.
+    # Skip Ninja's automatic regeneration checks: future-dated archive inputs
+    # otherwise keep build.ninja dirty even after 100 successful regenerations.
+    # This is local to Easy Setup; ordinary source builds keep their defaults.
+    args=[cmake,'-S',ROOT,'-B',BUILD,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release',
+          '-DCMAKE_SUPPRESS_REGENERATION=ON',
+          '-DCMAKE_C_COMPILER='+str(toolchain/'bin/clang.exe'),'-DCMAKE_CXX_COMPILER='+str(toolchain/'bin/clang++.exe'),
+          '-DCMAKE_MAKE_PROGRAM='+str(toolchain/'bin/ninja.exe'),'-DPython3_EXECUTABLE='+sys.executable,
+          '-DPSX_STATIC_RUNTIME=ON','-DPSX_DEBUG_TOOLS=OFF','-DPSX_DEBUG_SERVER_LITE=OFF','-DPSX_NETPLAY=OFF',
+          '-DPSXRECOMP_BIOS_STEMS=OpenBIOS','-DPSXRECOMP_FORCE_SETUP_HOST=OFF','-DPSXRECOMP_REQUIRE_GAME_C=ON',
+          '-DTEKKEN3_BUILD_PC_PORT=OFF','-DTEKKEN3_JUN_EXPERIMENTAL='+('ON' if include_jun else 'OFF')]
+    run(args,environment=env,friendly='The build tools could not finish setup. Open the setup log for details, then click Try again.')
+    emit(message='Building your game',detail='This is the long part. Next time you can play immediately.')
+    run([cmake,'--build',BUILD,'--target','psx-runtime','--parallel',env['CMAKE_BUILD_PARALLEL_LEVEL']],
+        environment=env,friendly='The game build stopped. Open the setup log for the specific error, then click Try again. Completed work is kept.')
+
 def prepare(disc,ttt,t3,include_jun):
     STATE.mkdir(exist_ok=True)
     with (STATE/'setup.log').open('w',encoding='utf-8') as f:f.write('Tekken 3 easy setup '+RELEASE+'\n')
@@ -188,18 +207,7 @@ def prepare(disc,ttt,t3,include_jun):
         emit(message='Adding Jun Kazama',detail='Importing her model, moves, voices and portraits. This runs muted.')
         run([sys.executable,ROOT/'tools/import_jun.py','--ttt1',ttt,'--t3-arcade',t3,'--mame',oracle,'--no-rebuild'],
             environment=env,friendly="Jun's import could not finish. Open the setup log for details, then click Try again.")
-    cmake=toolchain/'bin/cmake.exe'
-    emit(message='Preparing the game to build',detail='First setup can take several minutes.')
-    args=[cmake,'-S',ROOT,'-B',BUILD,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release',
-          '-DCMAKE_C_COMPILER='+str(toolchain/'bin/clang.exe'),'-DCMAKE_CXX_COMPILER='+str(toolchain/'bin/clang++.exe'),
-          '-DCMAKE_MAKE_PROGRAM='+str(toolchain/'bin/ninja.exe'),'-DPython3_EXECUTABLE='+sys.executable,
-          '-DPSX_STATIC_RUNTIME=ON','-DPSX_DEBUG_TOOLS=OFF','-DPSX_DEBUG_SERVER_LITE=OFF','-DPSX_NETPLAY=OFF',
-          '-DPSXRECOMP_BIOS_STEMS=OpenBIOS','-DPSXRECOMP_FORCE_SETUP_HOST=OFF','-DPSXRECOMP_REQUIRE_GAME_C=ON',
-          '-DTEKKEN3_BUILD_PC_PORT=OFF','-DTEKKEN3_JUN_EXPERIMENTAL='+('ON' if include_jun else 'OFF')]
-    run(args,environment=env,friendly='The build tools could not finish setup. Check your internet connection and open the setup log for details.')
-    emit(message='Building your game',detail='This is the long part. Next time you can play immediately.')
-    run([cmake,'--build',BUILD,'--target','psx-runtime','--parallel',env['CMAKE_BUILD_PARALLEL_LEVEL']],
-        environment=env,friendly='The game build stopped. Close other heavy apps and click Try again. Completed work is kept.')
+    build_game(toolchain,env,include_jun)
     if not EXE.is_file():raise SetupError('The game executable was not created.')
     if include_jun and not jun_ready(BUILD/'mods/jun'):raise SetupError('Jun is missing from the finished build. Click Try again.')
     save_json(STATE/'ready.json',{'release':RELEASE,'jun':include_jun,'exe_sha256':digest(EXE)})
