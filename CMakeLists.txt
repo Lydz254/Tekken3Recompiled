@@ -65,6 +65,83 @@ target_sources(psx-runtime PRIVATE "${TEKKEN3_FIGHT_CAMERA_SOURCE}")
 target_include_directories(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set_source_files_properties("${TEKKEN3_FIGHT_CAMERA_SOURCE}" PROPERTIES
     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/generated")
+# Apple's ld64 has no --wrap, and the option is a hard error there, so every
+# wrapped routine below is redirected with the preprocessor instead: the
+# defining TU is compiled with -D<sym>=__real_<sym> and the wrapping TU with
+# -D__wrap_<sym>=<sym>. Call sites elsewhere still say <sym> and therefore
+# reach the wrapper, which is what --wrap does, and a wrapper delegating to
+# __real_<sym> still finds the stock routine. Every other platform keeps the
+# linker option. WRAPPER names a generated wrapper that cannot be found by
+# scanning src/; DEFINED_IN overrides a defining TU that is not compiled.
+function(tekken3_wrap_symbol sym)
+    cmake_parse_arguments(TW "" "WRAPPER;DEFINED_IN" "" ${ARGN})
+    if(NOT APPLE)
+        target_link_options(psx-runtime PRIVATE "-Wl,--wrap=${sym}")
+        return()
+    endif()
+    set_property(GLOBAL APPEND PROPERTY TEKKEN3_WRAP_SYMS "${sym}")
+    if(TW_WRAPPER)
+        set_property(GLOBAL PROPERTY TEKKEN3_WRAP_WRAPPER_${sym} "${TW_WRAPPER}")
+    endif()
+    if(TW_DEFINED_IN)
+        set_property(GLOBAL PROPERTY TEKKEN3_WRAP_DEF_${sym} "${TW_DEFINED_IN}")
+    endif()
+endfunction()
+
+# Resolve every accumulated symbol in one pass and apply the definitions.
+function(tekken3_apply_wraps)
+    if(NOT APPLE)
+        return()
+    endif()
+    get_property(_syms GLOBAL PROPERTY TEKKEN3_WRAP_SYMS)
+    if(NOT _syms)
+        return()
+    endif()
+    string(REPLACE ";" "," _symarg "${_syms}")
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tools/resolve_wrap_targets.py"
+                --root "${CMAKE_CURRENT_SOURCE_DIR}" --symbols "${_symarg}"
+        OUTPUT_VARIABLE _out ERROR_VARIABLE _err RESULT_VARIABLE _rc
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT _rc EQUAL 0)
+        message(FATAL_ERROR
+            "resolve_wrap_targets.py failed (exit ${_rc}); --wrap emulation "
+            "cannot be applied:\n${_err}")
+    endif()
+    string(REPLACE "\n" ";" _lines "${_out}")
+    foreach(_line IN LISTS _lines)
+        string(REPLACE "|" ";" _parts "${_line}")
+        list(GET _parts 0 _sym)
+        list(GET _parts 1 _def)
+        set(_wrapper "")
+        list(LENGTH _parts _n)
+        if(_n GREATER 2)
+            list(GET _parts 2 _wrapper)
+        endif()
+        get_property(_def_override GLOBAL PROPERTY TEKKEN3_WRAP_DEF_${_sym})
+        if(_def_override)
+            set(_def "${_def_override}")
+        endif()
+        get_property(_wrapper_override GLOBAL PROPERTY TEKKEN3_WRAP_WRAPPER_${_sym})
+        if(_wrapper_override)
+            set(_wrapper "${_wrapper_override}")
+        endif()
+        if(NOT _wrapper)
+            message(FATAL_ERROR
+                "no wrapper found for ${_sym}: it is defined in ${_def} but no "
+                "src/*.c defines __wrap_${_sym}. Pass WRAPPER to "
+                "tekken3_wrap_symbol() when a generated file wraps it.")
+        endif()
+        set_property(SOURCE "${_def}" APPEND PROPERTY
+            COMPILE_DEFINITIONS "${_sym}=__real_${_sym}")
+        set_property(SOURCE "${_wrapper}" APPEND PROPERTY
+            COMPILE_DEFINITIONS "__wrap_${_sym}=${_sym}")
+    endforeach()
+    list(LENGTH _syms _count)
+    message(STATUS "Emulated -Wl,--wrap for ${_count} symbol(s) without ld64")
+endfunction()
+
 # Apple's ld64 has no --wrap, and the option is a hard error there. The
 # regenerated camera variant is a complete replacement: build_fight_camera.py
 # renames the stock definition to __wrap_func_80064E10, nothing calls
@@ -72,22 +149,7 @@ set_source_files_properties("${TEKKEN3_FIGHT_CAMERA_SOURCE}" PROPERTIES
 # reproduce --wrap with the preprocessor: move the stock definition aside in
 # its own shard, and let the variant take the name the call sites use. Other
 # platforms keep the linker option.
-if(APPLE)
-    set(_t3_cam_shard "${CMAKE_CURRENT_SOURCE_DIR}/generated/SLUS_004.02_full_26.c")
-    if(NOT EXISTS "${_t3_cam_shard}")
-        message(FATAL_ERROR
-            "fight camera --wrap emulation expects func_80064E10 in "
-            "${_t3_cam_shard}; the recompiler sharded differently, so update "
-            "this block and tekken3_fight_camera_codegen together.")
-    endif()
-    set_property(SOURCE "${_t3_cam_shard}" APPEND PROPERTY
-        COMPILE_DEFINITIONS "func_80064E10=__real_func_80064E10")
-    set_property(SOURCE "${TEKKEN3_FIGHT_CAMERA_SOURCE}" APPEND PROPERTY
-        COMPILE_DEFINITIONS "__wrap_func_80064E10=func_80064E10")
-    unset(_t3_cam_shard)
-else()
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80064E10")
-endif()
+tekken3_wrap_symbol(func_80064E10 WRAPPER "${TEKKEN3_FIGHT_CAMERA_SOURCE}")
 set_property(TARGET psx-runtime APPEND PROPERTY LINK_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/mods/preloaded/packages/tekken3.enhancement.true-widescreen/1.0.0/manifest.toml"
     "${CMAKE_CURRENT_SOURCE_DIR}/mods/preloaded/packages/tekken3.enhancement.true-widescreen/1.0.0/README.md")
@@ -106,14 +168,14 @@ if(TEKKEN3_JUN_EXPERIMENTAL)
     endif()
     target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/tekken3_jun_renderer.c")
     target_include_directories(psx-runtime PRIVATE "${JUN_GENERATED_DIR}")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80036CAC")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80035BC0")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80035190")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80035CE8")
+    tekken3_wrap_symbol(func_80036CAC)
+    tekken3_wrap_symbol(func_80035BC0)
+    tekken3_wrap_symbol(func_80035190)
+    tekken3_wrap_symbol(func_80035CE8)
     target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/tekken3_jun_motion.c")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8003AD10")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80037CBC")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8006A3BC")
+    tekken3_wrap_symbol(func_8003AD10)
+    tekken3_wrap_symbol(func_80037CBC)
+    tekken3_wrap_symbol(func_8006A3BC)
     target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/tekken3_jun_combat.c")
     set(JUN_COMBAT_HOOKS "${CMAKE_CURRENT_BINARY_DIR}/tekken3_jun_combat_generated.c")
     set(JUN_PUSH_HOOKS "${CMAKE_CURRENT_BINARY_DIR}/tekken3_jun_push_generated.c")
@@ -126,25 +188,44 @@ if(TEKKEN3_JUN_EXPERIMENTAL)
     set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/generated/SLUS_004.02_full_04.c" PROPERTIES HEADER_FILE_ONLY TRUE)
     set_source_files_properties("${JUN_COMBAT_HOOKS}" "${JUN_PUSH_HOOKS}" PROPERTIES
         INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/generated")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8002F3AC" "-Wl,--wrap=func_8003F098" "-Wl,--wrap=func_8002DE24")
+    tekken3_wrap_symbol(func_8002F3AC WRAPPER "${JUN_COMBAT_HOOKS}")
+    tekken3_wrap_symbol(func_8003F098 WRAPPER "${JUN_COMBAT_HOOKS}")
+    tekken3_wrap_symbol(func_8002DE24 WRAPPER "${JUN_COMBAT_HOOKS}")
     target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/tekken3_jun_voices.c")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80040C90"
-        "-Wl,--wrap=spu_render" "-Wl,--wrap=spu_set_host_mix_volume"
-        "-Wl,--wrap=spu_init" "-Wl,--wrap=spu_snapshot_read")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8002D178" "-Wl,--wrap=func_80038B4C" "-Wl,--wrap=func_800389C0")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8002D264" "-Wl,--wrap=func_8002E8D0")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8002E0BC")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_8002CC28")
+    tekken3_wrap_symbol(func_80040C90)
+    tekken3_wrap_symbol(spu_render)
+    tekken3_wrap_symbol(spu_set_host_mix_volume)
+    tekken3_wrap_symbol(spu_init)
+    tekken3_wrap_symbol(spu_snapshot_read)
+    tekken3_wrap_symbol(func_8002D178)
+    tekken3_wrap_symbol(func_80038B4C)
+    tekken3_wrap_symbol(func_800389C0)
+    tekken3_wrap_symbol(func_8002D264)
+    tekken3_wrap_symbol(func_8002E8D0)
+    tekken3_wrap_symbol(func_8002E0BC)
+    tekken3_wrap_symbol(func_8002CC28)
     target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/tekken3_jun_selector.c")
-    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=tekken3_outfits_input" "-Wl,--wrap=host_osd_outfit_image" "-Wl,--wrap=host_osd_draw_sdl")
+    tekken3_wrap_symbol(tekken3_outfits_input)
+    tekken3_wrap_symbol(host_osd_outfit_image)
+    tekken3_wrap_symbol(host_osd_draw_sdl)
     target_sources(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/tekken3_jun_roster.c")
-    target_link_options(psx-runtime PRIVATE
-        "-Wl,--wrap=func_80052938" "-Wl,--wrap=func_80052940" "-Wl,--wrap=func_8004B790" "-Wl,--wrap=func_8004B928"
-        "-Wl,--wrap=func_80031BFC" "-Wl,--wrap=func_80052AD0"
-        "-Wl,--wrap=func_80052958" "-Wl,--wrap=func_80052990" "-Wl,--wrap=func_8006BF20"
-        "-Wl,--wrap=func_8003626C" "-Wl,--wrap=func_80036294" "-Wl,--wrap=func_800362C4"
-        "-Wl,--wrap=func_8003F044")
+    tekken3_wrap_symbol(func_80052938)
+    tekken3_wrap_symbol(func_80052940)
+    tekken3_wrap_symbol(func_8004B790)
+    tekken3_wrap_symbol(func_8004B928)
+    # Shard 04 is HEADER_FILE_ONLY here; JUN_PUSH_HOOKS compiles its copy.
+    tekken3_wrap_symbol(func_80031BFC DEFINED_IN "${JUN_PUSH_HOOKS}")
+    tekken3_wrap_symbol(func_80052AD0)
+    tekken3_wrap_symbol(func_80052958)
+    tekken3_wrap_symbol(func_80052990)
+    tekken3_wrap_symbol(func_8006BF20)
+    tekken3_wrap_symbol(func_8003626C)
+    tekken3_wrap_symbol(func_80036294)
+    tekken3_wrap_symbol(func_800362C4)
+    tekken3_wrap_symbol(func_8003F044)
 endif()
+
+tekken3_apply_wraps()
 
 # A dynamic developer build can import the bundled Clang C++ runtime.  Stage it
 # when that actually happens; production builds use PSX_STATIC_RUNTIME and need
