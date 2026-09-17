@@ -65,7 +65,29 @@ target_sources(psx-runtime PRIVATE "${TEKKEN3_FIGHT_CAMERA_SOURCE}")
 target_include_directories(psx-runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set_source_files_properties("${TEKKEN3_FIGHT_CAMERA_SOURCE}" PROPERTIES
     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/generated")
-target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80064E10")
+# Apple's ld64 has no --wrap, and the option is a hard error there. The
+# regenerated camera variant is a complete replacement: build_fight_camera.py
+# renames the stock definition to __wrap_func_80064E10, nothing calls
+# __real_func_80064E10, and every reference lives in the dispatch table. So
+# reproduce --wrap with the preprocessor: move the stock definition aside in
+# its own shard, and let the variant take the name the call sites use. Other
+# platforms keep the linker option.
+if(APPLE)
+    set(_t3_cam_shard "${CMAKE_CURRENT_SOURCE_DIR}/generated/SLUS_004.02_full_26.c")
+    if(NOT EXISTS "${_t3_cam_shard}")
+        message(FATAL_ERROR
+            "fight camera --wrap emulation expects func_80064E10 in "
+            "${_t3_cam_shard}; the recompiler sharded differently, so update "
+            "this block and tekken3_fight_camera_codegen together.")
+    endif()
+    set_property(SOURCE "${_t3_cam_shard}" APPEND PROPERTY
+        COMPILE_DEFINITIONS "func_80064E10=__real_func_80064E10")
+    set_property(SOURCE "${TEKKEN3_FIGHT_CAMERA_SOURCE}" APPEND PROPERTY
+        COMPILE_DEFINITIONS "__wrap_func_80064E10=func_80064E10")
+    unset(_t3_cam_shard)
+else()
+    target_link_options(psx-runtime PRIVATE "-Wl,--wrap=func_80064E10")
+endif()
 set_property(TARGET psx-runtime APPEND PROPERTY LINK_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/mods/preloaded/packages/tekken3.enhancement.true-widescreen/1.0.0/manifest.toml"
     "${CMAKE_CURRENT_SOURCE_DIR}/mods/preloaded/packages/tekken3.enhancement.true-widescreen/1.0.0/README.md")
