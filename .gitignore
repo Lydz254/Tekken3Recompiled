@@ -12,6 +12,8 @@
 /Play Tekken 3.exe
 /psxrecomp/generated/
 /psxrecomp/recompiler/build*/
+/psxrecomp/recompiler/lib/rabbitizer/include/generated/
+/psxrecomp/recompiler/lib/rabbitizer/cplusplus/include/generated/
 /psxrecomp/bios/SCPH*.BIN
 /psxrecomp/bios/SCPH*.bin
 /Tekken_3_Recompiled.exe
