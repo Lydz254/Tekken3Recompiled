@@ -54,3 +54,4 @@ state.toml
 .env.*
 *.pem
 *.key
+.DS_Store
