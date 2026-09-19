@@ -86,6 +86,10 @@ The modified framework and UI source are vendored so downloading the repository
 preserves all local changes. Exact upstream revisions are in [UPSTREAM.json](UPSTREAM.json).
 No submodule checkout is required for this release.
 
+**On macOS**, these commands need a few changes and the disc has to be in a
+Redump-style track set. See [RUNNING-MACOS.md](RUNNING-MACOS.md) for the
+prerequisites and the adjusted commands.
+
 ```powershell
 python psxrecomp/psxrecomp_cli.py ensure-emitters --project-root .
 python psxrecomp/psxrecomp_cli.py generate --project-root . --config game.toml --disc "PATH-TO-YOUR-DISC.cue"
