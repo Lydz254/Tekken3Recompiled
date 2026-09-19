@@ -795,6 +795,35 @@ def register_toolchain_user_env(pack_root: Path, log=None) -> Path:
     return usable
 
 
+def _restore_exec_bits(zf: zipfile.ZipFile, dest: Path) -> None:
+    """Put back the executable bits that ZipFile.extractall() drops.
+
+    extractall() creates every member under the process umask and ignores the
+    Unix mode the archive carries, so a pack built on a Unix host arrives with
+    cmake, ninja and clang not executable. The first probe then fails with
+    EACCES and the toolchain looks broken rather than merely unpacked wrong.
+
+    Execute is only added, never removed, and only where the archive marked
+    the file executable and the extracted file is already readable. Windows
+    has no such bit and needs nothing here.
+    """
+    if os.name == "nt":
+        return
+    for info in zf.infolist():
+        if info.is_dir():
+            continue
+        if not (info.external_attr >> 16) & 0o111:
+            continue
+        target = dest / info.filename
+        if not target.is_file():
+            continue
+        try:
+            mode = target.stat().st_mode
+            target.chmod(mode | ((mode & 0o444) >> 2))
+        except OSError:
+            pass
+
+
 def unpack_zip_to(zip_path: Path, dest: Path) -> Path:
     """Extract *zip_path* into *dest* (replaced) and return usable pack root."""
     if dest.exists():
@@ -802,6 +831,7 @@ def unpack_zip_to(zip_path: Path, dest: Path) -> Path:
     dest.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(dest)
+        _restore_exec_bits(zf, dest)
     root = unwrap_pack_root(dest)
     if not pack_root_looks_usable(root):
         raise RuntimeError(f"toolchain zip missing bin/{cmake_name()}: {zip_path}")
