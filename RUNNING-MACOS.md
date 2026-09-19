@@ -165,5 +165,12 @@ from anywhere else it opens the launcher instead of the game.
 
 ## 6. What this covers
 
-The base game, built from source and running natively on macOS. Guest
-characters are a separate matter and are not part of this branch.
+The base game, built from source and running natively on macOS.
+
+That includes the mods this project bundles, which need nothing done to them:
+true widescreen, the roster unlock, Forest HD, the four texture packs, the
+outfit gallery and the audio options are all built and work as they do on
+Windows. None of their sources were changed for macOS.
+
+Jun and other guest characters are a separate matter and are not part of this
+branch.
