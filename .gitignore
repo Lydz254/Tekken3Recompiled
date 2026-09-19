@@ -55,3 +55,5 @@ state.toml
 *.pem
 *.key
 .DS_Store
+packaging/macos/icon.png
+packaging/macos/icon.icns

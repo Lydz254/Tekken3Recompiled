@@ -151,7 +151,39 @@ cd build-release
 `bios/`, `assets/` and `mods/` relative to the current directory, so started
 from anywhere else it opens the launcher instead of the game.
 
-## 5. Behaviour worth knowing about
+## 5. An icon for the executable, if you want one
+
+Finder draws the generic icon for `Tekken_3_Recompiled`, because a bare Unix
+executable has nowhere to keep one. To give it a proper icon, put a square PNG
+at `packaging/macos/icon.png` and build again:
+
+```bash
+mkdir -p packaging/macos
+cp ~/somewhere/my-icon.png packaging/macos/icon.png
+```
+
+The build then sets it after linking. Nothing else changes, and with no file
+there the step does not exist at all. To use an image kept elsewhere, name it
+when you configure instead:
+
+```bash
+-DTEKKEN3_MACOS_ICON=/path/to/icon.png
+```
+
+An `.icns` works as well as a PNG. Supply the largest image you have, since the
+icon carries every size from 16 px to 1024 px and a small source will look soft
+at the larger ones. **No artwork is shipped with this repository**, and
+`packaging/macos/icon.*` is gitignored, so whatever you put there stays yours.
+
+The icon goes into the file's resource fork, which lives in extended
+attributes. The executable's own bytes are untouched. Note that this is the
+Finder icon only: the icon shown in the Dock while the game runs comes from an
+application bundle, which this build does not produce.
+
+If Finder keeps showing the old icon, it is caching it. `killall Finder` sorts
+that out.
+
+## 6. Behaviour worth knowing about
 
 - **`settings.toml` overrides `game.toml`.** It is written into the build
   directory and remembers your choice of renderer, amongst other things. The
@@ -163,7 +195,7 @@ from anywhere else it opens the launcher instead of the game.
 - **`self-comparison always evaluates to true` warnings** during the build are
   expected. They come from recompiled unconditional MIPS branches.
 
-## 6. What this covers
+## 7. What this covers
 
 The base game, built from source and running natively on macOS.
 

@@ -334,6 +334,30 @@ if(TEKKEN3_JUN_EXPERIMENTAL)
         VERBATIM)
 endif()
 
+# Finder draws a generic icon for a bare Unix executable, there being nowhere
+# in one to keep an icon. Give it a real one when the builder supplies the
+# artwork, without shipping any: TEKKEN3_MACOS_ICON names a PNG or an .icns,
+# and packaging/macos/icon.png is picked up when it happens to be there. With
+# no icon there is no step and the build is unchanged. Windows and Linux are
+# not concerned; the icon lives in a resource fork, which is a macOS notion.
+if(APPLE)
+    set(TEKKEN3_MACOS_ICON "" CACHE FILEPATH
+        "PNG or .icns to use as the Finder icon of the built executable")
+    if(NOT TEKKEN3_MACOS_ICON
+       AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/icon.png")
+        set(TEKKEN3_MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/icon.png")
+    endif()
+    if(TEKKEN3_MACOS_ICON)
+        set_property(TARGET psx-runtime APPEND PROPERTY LINK_DEPENDS
+            "${TEKKEN3_MACOS_ICON}")
+        add_custom_command(TARGET psx-runtime POST_BUILD
+            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/macos_set_icon.sh"
+                    "${TEKKEN3_MACOS_ICON}" "$<TARGET_FILE:psx-runtime>"
+            COMMENT "Setting the Finder icon on the executable"
+            VERBATIM)
+    endif()
+endif()
+
 endif()
 
 endif() # Full game enhancements need locally generated game code.
