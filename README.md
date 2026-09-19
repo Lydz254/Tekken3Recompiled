@@ -87,7 +87,7 @@ preserves all local changes. Exact upstream revisions are in [UPSTREAM.json](UPS
 No submodule checkout is required for this release.
 
 **On macOS**, these commands need a few changes and the disc has to be in a
-Redump-style track set. See [RUNNING-MACOS.md](RUNNING-MACOS.md) for the
+Redump-style track set. See [README-MacOS.md](README-MacOS.md) for the
 prerequisites and the adjusted commands.
 
 ```powershell
