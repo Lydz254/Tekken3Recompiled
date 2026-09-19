@@ -7,8 +7,9 @@ and are not used here.
 
 Tested on macOS 15.7.9, Intel Mac, Apple clang 17. Apple Silicon is untested.
 
-Every step below was run from a fresh clone. `PORTING.md` explains *why* each
-workaround is needed; this file only tells you what to type.
+Every step below was run from a fresh clone. The commit messages carry the
+reasoning behind each workaround, what the symptom was and why the fix is that
+one; this file only tells you what to type.
 
 ---
 
