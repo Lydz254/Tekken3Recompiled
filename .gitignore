@@ -49,6 +49,7 @@ settings.toml
 keybinds.ini
 bios.cfg
 disc.cfg
+rom.cfg
 state.toml
 .env
 .env.*
