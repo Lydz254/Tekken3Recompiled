@@ -148,9 +148,17 @@ cd build-release
 ./Tekken_3_Recompiled
 ```
 
-**Run it from inside `build-release/`.** The binary resolves `settings.toml`,
-`bios/`, `assets/` and `mods/` relative to the current directory, so started
-from anywhere else it opens the launcher instead of the game.
+The working directory does not matter. Every runtime file the game reads,
+`game.toml`, the disc, OpenBIOS, `settings.toml` and its caches, is anchored on
+the directory the executable sits in, and the runtime says so in as many words:
+"deliberately NEVER the current working directory". Started from `/tmp` by its
+full path, the game still finds the configuration beside itself.
+
+One thing to know all the same: a relative path is tried against the working
+directory first, and only then against the executable's own folder. So a stray
+`mods/` or `disc/` in whatever directory you start from can stand in for the
+real one. Starting from the build directory, or by double-clicking the app,
+avoids the question entirely.
 
 ## 5. Behaviour worth knowing about
 
