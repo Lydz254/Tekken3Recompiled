@@ -133,8 +133,9 @@ Two differences from the README's version of these commands:
 
 `ensure-emitters` first tries to download a prebuilt cmake and clang pack. If
 that fails, it falls back to the cmake and ninja on your `PATH`, and the build
-is none the worse for it. To skip the attempt altogether, add `--no-download`
-and `--no-toolchain-download` to `ensure-emitters` and `rebuild`.
+is none the worse for it. To skip the attempt altogether, pass `--no-download`
+to `ensure-emitters` and `--no-toolchain-download` to `generate` and `rebuild`.
+Each command accepts one spelling and refuses the other.
 
 `generate` recompiles roughly 1.7 million lines of C into 45 shards, and
 `rebuild` then compiles them. Allow several minutes for each, and a few GB of
